@@ -4,25 +4,31 @@ import Then
 
 open class JHorizontalPickerView: UIView {
     private var pickerWidth = 50
-
+    
     public var pickerSelectValue = 0
-
-    public var isFirstLoad: Bool?
-
+    
+    public var isFirstLoad: Bool? = true
+    
     private let levelValues: [Int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
-    private var rotationAngle: CGFloat! = -90  * (.pi/180)
-
+    
+    private var rotationAngle: CGFloat! = -90  * (.pi / 180)
+    
     private var changedLevelPicker = false
-
+    
+    public var selectedFontSize: CGFloat
+    public var regularFontSize: CGFloat
+    
+    public var selectedTextColor: UIColor
+    public var regularTextColor: UIColor
+    
     public var delegate: JHorizontalPickerViewDelegate?
-
+    
     lazy var pickerView = UIPickerView().then {
         $0.delegate = self
         $0.dataSource = self
         $0.transform = CGAffineTransform(rotationAngle: -90 * (.pi / 180))
     }
-
+    
     private lazy var titleLabel = UILabel().then {
         $0.textAlignment = .left
         $0.font = UIFont.systemFont(ofSize: 22, weight: .bold)
@@ -31,8 +37,14 @@ open class JHorizontalPickerView: UIView {
     
     lazy var pickerSetLabel = UILabel()
     
-    public override init(frame: CGRect) {
+    public init(frame: CGRect, initialPickerValue: Int, selectedFontSize: CGFloat = 30, regularFontSize: CGFloat = 20,
+                selectedTextColor: UIColor = .white, regularTextColor: UIColor = .black) {
+        self.selectedFontSize = selectedFontSize
+        self.regularFontSize = regularFontSize
+        self.selectedTextColor = selectedTextColor
+        self.regularTextColor = regularTextColor
         super.init(frame: frame)
+        self.pickerSelectValue = initialPickerValue
         setPicker()
         pickerView.subviews[1].isHidden = true
     }
@@ -40,7 +52,7 @@ open class JHorizontalPickerView: UIView {
     required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-
+    
     func setPicker() {
         setUpLayout()
         self.backgroundColor = .white
@@ -51,7 +63,7 @@ open class JHorizontalPickerView: UIView {
         guard changedLevelPicker else {
             pickerSelectValue =  pickerSelectValue < 0 ? 0 : pickerSelectValue
             pickerSelectValue =  pickerSelectValue < levelValues.count ? levelValues.count : pickerSelectValue
-
+            
             self.pickerView.selectRow(pickerSelectValue, inComponent: 0, animated: true)
             
             if self.frame.height < 110 {
@@ -80,7 +92,7 @@ extension JHorizontalPickerView: UIPickerViewDelegate, UIPickerViewDataSource {
     ) -> Int {
         return levelValues.count
     }
-
+    
     public func pickerView(_ pickerView: UIPickerView,
                            didSelectRow row: Int,
                            inComponent component: Int
@@ -93,16 +105,16 @@ extension JHorizontalPickerView: UIPickerViewDelegate, UIPickerViewDataSource {
         
         let selectLabel = selectView.subviews[0] as! UILabel
         selectLabel.textColor = .black
-        selectLabel.font = .systemFont(ofSize: 10, weight: .bold)
+        selectLabel.font  = .systemFont(ofSize: 30, weight: .bold)
         
         if let beforeView = pickerView.view(forRow: row - 1, forComponent: component) {
             let beforeLabel = beforeView.subviews[0] as! UILabel
-            beforeLabel.font = .systemFont(ofSize: 10, weight: .bold)
+            beforeLabel.font = .systemFont(ofSize: 30, weight: .bold)
             beforeLabel.textColor = .black
         }
         if let afterView = pickerView.view(forRow: row + 1, forComponent: component) {
             let afterLabel = afterView.subviews[0] as! UILabel
-            afterLabel.font = .systemFont(ofSize: 10, weight: .bold)
+            afterLabel.font = .systemFont(ofSize: 30, weight: .bold)
             afterLabel.textColor = .black
         }
         
@@ -121,33 +133,32 @@ extension JHorizontalPickerView: UIPickerViewDelegate, UIPickerViewDataSource {
                            forComponent component: Int,
                            reusing view: UIView?
     ) -> UIView {
-
-        let pickerRow = UIView()
-        pickerRow.frame = CGRect(x: 0, y: 0, width: pickerWidth, height: 32)
         
-        lazy var rowLabel = UILabel().then {
-            $0.textColor = .black
-            $0.font = .systemFont(ofSize: 10, weight: .bold)
+        let pickerRow = UIView(frame: CGRect(x: 0, y: 0, width: pickerWidth, height: 32))
+        let labelFontSize = row == pickerView.selectedRow(inComponent: component) ? selectedFontSize : regularFontSize
+        let textColor = row == pickerView.selectedRow(inComponent: component) ? selectedTextColor : regularTextColor
+        
+        let rowLabel = UILabel().then {
+            $0.textColor = textColor
+            $0.font = UIFont.systemFont(ofSize: labelFontSize, weight: .bold)
             $0.textAlignment = .center
-            $0.layer.cornerRadius = 15
             $0.layer.masksToBounds = true
-            $0.backgroundColor = .white
         }
-
+        
         pickerRow.addSubview(rowLabel)
         rowLabel.snp.makeConstraints {
-            $0.leading.equalTo(pickerRow.snp.leading).offset(8)
-            $0.trailing.equalTo(pickerRow.snp.trailing).offset(-8)
+            $0.leading.equalTo(pickerRow.snp.leading).offset(4)
+            $0.trailing.equalTo(pickerRow.snp.trailing).offset(-4)
             $0.height.equalTo(pickerRow.snp.height)
         }
-
+        
         rowLabel.text = "\(levelValues[row])"
         pickerRow.transform = CGAffineTransform(rotationAngle: 90 * (.pi/180))
-
+        
         guard let myBool = isFirstLoad else {
             return pickerRow
         }
-
+        
         guard !myBool else {
             return pickerRow
         }
@@ -155,21 +166,22 @@ extension JHorizontalPickerView: UIPickerViewDelegate, UIPickerViewDataSource {
         guard let selectView = pickerView.view(forRow: pickerSelectValue, forComponent: component) else {
             return pickerRow
         }
-
+        
         let selectLabel = selectView.subviews[0] as! UILabel
         selectLabel.textColor = .white
-        selectLabel.font = .systemFont(ofSize: 10, weight: .bold)
+        selectLabel.font = UIFont.systemFont(ofSize: regularFontSize, weight: .bold)
         return pickerRow
     }
 }
+
 extension JHorizontalPickerView {
     
     private func setUpLayout() {
-
+        
         self.addSubview(pickerSetLabel)
         self.addSubview(pickerView)
         self.addSubview(titleLabel)
-
+        
         pickerSetLabel.snp.makeConstraints {
             $0.height.equalTo(pickerWidth)
             $0.width.equalTo(self.snp.width)
@@ -182,7 +194,7 @@ extension JHorizontalPickerView {
             $0.centerX.equalTo(pickerSetLabel.snp.centerX)
             $0.centerY.equalTo(pickerSetLabel.snp.centerY)
         }
-
+        
         titleLabel.snp.makeConstraints {
             $0.centerX.equalToSuperview()
             $0.bottom.equalTo(pickerSetLabel.snp.top)
